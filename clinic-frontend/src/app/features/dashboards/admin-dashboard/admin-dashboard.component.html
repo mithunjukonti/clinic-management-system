@@ -1,0 +1,44 @@
+
+<div class="dashboard">
+  <header class="topbar">
+    <a class="brand" routerLink="/admin-dashboard">
+      <span class="brand-mark">+</span>
+      <span>Clinic Management</span>
+    </a>
+    <div class="account">
+      <span>{{ username }}</span>
+      <button type="button" (click)="logout()">Log out</button>
+    </div>
+  </header>
+
+  <main class="content">
+    <p class="eyebrow">ADMINISTRATION</p>
+    <h1>Admin Dashboard</h1>
+    <p class="description">
+      Welcome, {{ username }}. Manage clinic operations from one place.
+    </p>
+
+    <section class="module-grid">
+      <article class="module-card">
+        <span class="module-icon">P</span>
+        <h2>Patients</h2>
+        <p>Register and manage patient information.</p>
+      </article>
+      <article class="module-card">
+        <span class="module-icon">D</span>
+        <h2>Doctors</h2>
+        <p>Manage doctor profiles and availability.</p>
+      </article>
+      <article class="module-card">
+        <span class="module-icon">A</span>
+        <h2>Appointments</h2>
+        <p>Oversee clinic appointment workflows.</p>
+      </article>
+      <article class="module-card">
+        <span class="module-icon">U</span>
+        <h2>User Management</h2>
+        <p>Manage authorized clinic accounts.</p>
+      </article>
+    </section>
+  </main>
+</div>

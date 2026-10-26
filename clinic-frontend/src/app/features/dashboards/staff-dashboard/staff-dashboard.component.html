@@ -1,0 +1,52 @@
+
+<div class="dashboard">
+  <header class="topbar">
+    <a class="brand" routerLink="/staff-dashboard">
+      <span class="brand-mark">+</span>
+      <span>Clinic Management</span>
+    </a>
+
+    <div class="account">
+      <span>{{ username }}</span>
+      <button type="button" (click)="logout()">Log out</button>
+    </div>
+  </header>
+
+  <main class="content">
+    <p class="eyebrow">CLINIC OPERATIONS</p>
+    <h1>Staff Dashboard</h1>
+    <p class="description">
+      Welcome, {{ username }}. Manage your clinic's daily workflow.
+    </p>
+
+    <section class="module-grid">
+      <a class="module-card" routerLink="/patients">
+        <span class="module-icon">P</span>
+        <h2>Patients</h2>
+        <p>Register patients and manage patient information.</p>
+        <span class="card-link">Open Patients →</span>
+      </a>
+
+      <a class="module-card" routerLink="/doctors">
+        <span class="module-icon">D</span>
+        <h2>Doctors</h2>
+        <p>View doctor profiles and availability.</p>
+        <span class="card-link">Open Doctors →</span>
+      </a>
+
+      <a class="module-card" routerLink="/appointments">
+        <span class="module-icon">A</span>
+        <h2>Appointments</h2>
+        <p>Book appointments and manage the clinic schedule.</p>
+        <span class="card-link">Open Appointments →</span>
+      </a>
+
+      <a class="module-card" routerLink="/invoices">
+        <span class="module-icon">₹</span>
+        <h2>Invoices &amp; Billing</h2>
+        <p>Generate invoices for completed appointments and track pending or paid fees.</p>
+        <span class="card-link">Open Invoices →</span>
+      </a>
+    </section>
+  </main>
+</div>

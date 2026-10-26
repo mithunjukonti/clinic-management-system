@@ -1,0 +1,254 @@
+
+<div class="patients-page">
+  <header class="topbar">
+    <a class="brand" routerLink="/staff-dashboard">
+      <span class="brand-mark">+</span>
+      <span>Clinic Management</span>
+    </a>
+
+    <a class="back-link" routerLink="/staff-dashboard">
+      Back to Dashboard
+    </a>
+  </header>
+
+  <main class="content">
+    <div class="page-heading">
+      <div>
+        <p class="eyebrow">CLINIC OPERATIONS</p>
+        <h1>Patients</h1>
+        <p class="description">
+          View existing patients and register or update patient details.
+        </p>
+      </div>
+
+      <button
+        type="button"
+        class="primary-button"
+        (click)="openForm()"
+        [disabled]="showForm"
+      >
+        + Register Patient
+      </button>
+    </div>
+
+    <div *ngIf="successMessage" class="alert success" role="status">
+      {{ successMessage }}
+    </div>
+
+    <div
+      *ngIf="errorMessage && !showForm"
+      class="alert error"
+      role="alert"
+    >
+      {{ errorMessage }}
+    </div>
+
+    <section *ngIf="showForm" class="form-card">
+      <div class="form-heading">
+        <div>
+          <h2>{{ isEditing ? 'Edit Patient' : 'Register New Patient' }}</h2>
+          <p>
+            {{ isEditing
+              ? 'Update the selected patient details.'
+              : 'Enter the new patient details.' }}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          class="secondary-button"
+          (click)="cancelForm()"
+          [disabled]="saving"
+        >
+          Cancel
+        </button>
+      </div>
+
+      <form #patientForm="ngForm" (ngSubmit)="savePatient()">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="name">Full Name *</label>
+            <input
+              id="name"
+              name="name"
+              type="text"
+              [(ngModel)]="form.name"
+              maxlength="100"
+              placeholder="Enter full name"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="dateOfBirth">Date of Birth</label>
+            <input
+              id="dateOfBirth"
+              name="dateOfBirth"
+              type="date"
+              [(ngModel)]="form.dateOfBirth"
+              [max]="maxDate"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="gender">Gender</label>
+            <select
+              id="gender"
+              name="gender"
+              [(ngModel)]="form.gender"
+            >
+              <option value="">Select gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="phone">Phone *</label>
+            <input
+              id="phone"
+              name="phone"
+              type="tel"
+              [(ngModel)]="form.phone"
+              placeholder="Enter phone number"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              [(ngModel)]="form.email"
+              placeholder="Enter email address"
+              email
+            />
+          </div>
+
+          <div class="form-group full-width">
+            <label for="address">Address</label>
+            <textarea
+              id="address"
+              name="address"
+              [(ngModel)]="form.address"
+              rows="3"
+              placeholder="Enter residential address"
+            ></textarea>
+          </div>
+        </div>
+
+        <p *ngIf="errorMessage" class="alert error" role="alert">
+          {{ errorMessage }}
+        </p>
+
+        <div class="form-actions">
+          <button
+            type="button"
+            class="secondary-button"
+            (click)="cancelForm()"
+            [disabled]="saving"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            class="primary-button"
+            [disabled]="saving || patientForm.invalid"
+          >
+            {{ saving
+              ? (isEditing ? 'Saving Changes...' : 'Registering...')
+              : (isEditing ? 'Save Changes' : 'Save Patient') }}
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <section class="list-card">
+      <div class="list-heading">
+        <div>
+          <h2>Patient Directory</h2>
+          <p>{{ filteredPatients.length }} patient(s) displayed</p>
+        </div>
+
+        <button
+          type="button"
+          class="secondary-button"
+          (click)="loadPatients()"
+          [disabled]="loading"
+        >
+          {{ loading ? 'Loading...' : 'Refresh' }}
+        </button>
+      </div>
+
+      <div class="search-box">
+        <input
+          type="search"
+          name="searchTerm"
+          [(ngModel)]="searchTerm"
+          placeholder="Search by name, phone or email..."
+          aria-label="Search patients"
+        />
+      </div>
+
+      <div *ngIf="loading" class="empty-state">
+        Loading patients...
+      </div>
+
+      <div
+        *ngIf="!loading && filteredPatients.length === 0"
+        class="empty-state"
+      >
+        <h3>No patients found</h3>
+        <p>
+          {{ searchTerm
+            ? 'Try another search term.'
+            : 'Registered patients will appear here.' }}
+        </p>
+      </div>
+
+      <div
+        *ngIf="!loading && filteredPatients.length > 0"
+        class="table-wrapper"
+      >
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Patient</th>
+              <th>Date of Birth</th>
+              <th>Gender</th>
+              <th>Phone</th>
+              <th>Email</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr *ngFor="let patient of filteredPatients">
+              <td>{{ patient.id ?? '—' }}</td>
+              <td class="patient-name">{{ patient.name }}</td>
+              <td>{{ patient.dateOfBirth || '—' }}</td>
+              <td>{{ patient.gender || '—' }}</td>
+              <td>{{ patient.phone }}</td>
+              <td>{{ patient.email || '—' }}</td>
+              <td>
+                <button
+                  type="button"
+                  class="edit-button"
+                  (click)="editPatient(patient)"
+                  [disabled]="saving || patient.id == null"
+                >
+                  Edit
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</div>

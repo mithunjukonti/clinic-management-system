@@ -1,0 +1,54 @@
+
+# ==============================
+# Java / Spring Boot Backend
+# ==============================
+**/target/
+**/build/
+*.class
+*.jar
+*.war
+
+# Local database credentials
+**/src/main/resources/application.properties
+
+# Logs
+*.log
+logs/
+
+# ==============================
+# Angular / Node.js Frontend
+# ==============================
+**/node_modules/
+**/dist/
+**/.angular/
+**/.vite/
+**/coverage/
+
+# Nested Git repository metadata
+clinic-frontend/.git-backup/
+# ==============================
+# Environment variables and secrets
+# ==============================
+.env
+.env.*
+!.env.example
+
+# ==============================
+# IDE files
+# ==============================
+.classpath
+.project
+.settings/
+.idea/
+.vscode/
+*.iml
+
+# ==============================
+# Operating System files
+# ==============================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+
+**/.vscode/

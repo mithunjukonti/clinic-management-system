@@ -1,0 +1,136 @@
+
+:host {
+  display: block;
+  min-height: 100vh;
+}
+
+.login-page {
+  box-sizing: border-box;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at top left, #dcefeb 0, transparent 38%),
+    #f3f6fa;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.login-card {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 430px;
+  padding: 40px;
+  border: 1px solid #e4eaf0;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 18px 55px rgb(28 48 75 / 9%);
+}
+
+.brand-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 22px;
+  border-radius: 15px;
+  background: #087f8c;
+  color: #fff;
+  font-size: 36px;
+  font-weight: 700;
+}
+
+.eyebrow {
+  margin: 0 0 10px;
+  color: #087f8c;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.6px;
+}
+
+h1 {
+  margin: 0;
+  color: #172b4d;
+  text-align: center;
+  font-size: 30px;
+}
+
+.subtitle {
+  margin: 12px 0 30px;
+  color: #64748b;
+  text-align: center;
+  font-size: 14px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+label {
+  display: block;
+  margin-bottom: 8px;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 13px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  background: #fff;
+  color: #172b4d;
+  font-size: 15px;
+}
+
+input:focus {
+  border-color: #087f8c;
+  outline: 2px solid rgb(8 127 140 / 15%);
+}
+
+button {
+  width: 100%;
+  margin-top: 6px;
+  padding: 14px;
+  border: 0;
+  border-radius: 9px;
+  background: #087f8c;
+  color: white;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  background: #066874;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.error-message {
+  padding: 11px 12px;
+  border-radius: 8px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.security-note {
+  margin: 25px 0 0;
+  color: #64748b;
+  text-align: center;
+  font-size: 12px;
+}
+
+@media (max-width: 480px) {
+  .login-card {
+    padding: 28px 22px;
+  }
+}

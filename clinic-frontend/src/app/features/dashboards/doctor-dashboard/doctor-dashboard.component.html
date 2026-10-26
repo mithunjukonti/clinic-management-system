@@ -1,0 +1,97 @@
+
+<div class="dashboard">
+  <header class="topbar">
+    <a class="brand" routerLink="/doctor-dashboard">
+      <span class="brand-mark">+</span>
+      <span>Clinic Management</span>
+    </a>
+
+    <div class="account">
+      <span>{{ username }}</span>
+      <button type="button" (click)="logout()">Log out</button>
+    </div>
+  </header>
+
+  <main class="content">
+    <p class="eyebrow">CLINICAL WORKSPACE</p>
+    <h1>Doctor Dashboard</h1>
+
+    <p class="description">
+      Welcome, {{ username }}. Here's your appointment overview.
+    </p>
+
+    <section class="stats-grid" aria-label="Appointment statistics">
+      <article class="stat-card">
+        <p class="stat-label">Total Appointments</p>
+        <p class="stat-number">
+          {{ loadingStats ? '—' : totalAppointments }}
+        </p>
+        <span class="stat-caption">Assigned to you</span>
+      </article>
+
+      <article class="stat-card">
+        <p class="stat-label">Booked</p>
+        <p class="stat-number">
+          {{ loadingStats ? '—' : bookedAppointments }}
+        </p>
+        <span class="stat-caption">Awaiting consultation</span>
+      </article>
+
+      <article class="stat-card">
+        <p class="stat-label">Completed</p>
+        <p class="stat-number">
+          {{ loadingStats ? '—' : completedAppointments }}
+        </p>
+        <span class="stat-caption">Consultations completed</span>
+      </article>
+    </section>
+
+    <div *ngIf="statsError" class="stats-error" role="alert">
+      <span>{{ statsError }}</span>
+      <button
+        type="button"
+        (click)="loadAppointmentStats()"
+        [disabled]="loadingStats"
+      >
+        Retry
+      </button>
+    </div>
+
+    <div class="stats-actions">
+      <button
+        type="button"
+        class="refresh-button"
+        (click)="loadAppointmentStats()"
+        [disabled]="loadingStats"
+      >
+        {{ loadingStats ? 'Refreshing...' : 'Refresh Statistics' }}
+      </button>
+    </div>
+
+    <section class="module-grid">
+      <a class="module-card" routerLink="/appointments">
+        <span class="module-icon">A</span>
+        <h2>My Appointments</h2>
+        <p>View your assigned appointments and complete consultations.</p>
+        <span class="card-link">View appointments →</span>
+      </a>
+
+      <a class="module-card" routerLink="/doctors">
+        <span class="module-icon">D</span>
+        <h2>Doctor Directory</h2>
+        <p>View doctor profiles and their availability.</p>
+        <span class="card-link">View directory →</span>
+      </a>
+
+      <a class="module-card" routerLink="/medical-records">
+        <span class="module-icon">M</span>
+        <h2>Medical Records</h2>
+        <p>
+          View patient diagnoses, symptoms, treatments,
+          prescriptions, and follow-up details.
+        </p>
+        <span class="card-link">View medical records →</span>
+      </a>
+    </section>
+  </main>
+</div>

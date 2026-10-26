@@ -1,0 +1,263 @@
+
+<div class="doctors-page">
+  <header class="topbar">
+    <a
+      class="brand"
+      [routerLink]="userRole === 'DOCTOR' ? '/doctor-dashboard' : userRole === 'ADMIN' ? '/admin-dashboard' : '/staff-dashboard'"
+    >
+      <span class="brand-mark">+</span>
+      <span>Clinic Management</span>
+    </a>
+
+    <a
+      class="back-link"
+      [routerLink]="userRole === 'DOCTOR' ? '/doctor-dashboard' : userRole === 'ADMIN' ? '/admin-dashboard' : '/staff-dashboard'"
+    >
+      Back to Dashboard
+    </a>
+  </header>
+
+  <main class="content">
+    <div class="page-heading">
+      <div>
+        <p class="eyebrow">CLINIC OPERATIONS</p>
+        <h1>Doctors</h1>
+        <p class="description">
+          View doctor profiles, specializations, contact information, and availability.
+        </p>
+      </div>
+
+      <button
+        *ngIf="canManageDoctors"
+        type="button"
+        class="primary-button"
+        (click)="openForm()"
+        [disabled]="showForm"
+      >
+        + Add Doctor
+      </button>
+    </div>
+
+    <div *ngIf="successMessage" class="alert success" role="status">
+      {{ successMessage }}
+    </div>
+
+    <div
+      *ngIf="errorMessage && !showForm"
+      class="alert error"
+      role="alert"
+    >
+      {{ errorMessage }}
+    </div>
+
+    <!-- Only ADMIN can add or edit doctor profiles -->
+    <section
+      *ngIf="showForm && canManageDoctors"
+      class="form-card"
+    >
+      <div class="form-heading">
+        <div>
+          <h2>{{ isEditing ? 'Edit Doctor' : 'Add New Doctor' }}</h2>
+          <p>
+            {{ isEditing
+              ? 'Update the selected doctor details.'
+              : 'Enter the doctor details below.' }}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          class="secondary-button"
+          (click)="cancelForm()"
+          [disabled]="saving"
+        >
+          Cancel
+        </button>
+      </div>
+
+      <form #doctorForm="ngForm" (ngSubmit)="saveDoctor()">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="name">Full Name *</label>
+            <input
+              id="name"
+              name="name"
+              type="text"
+              [(ngModel)]="form.name"
+              maxlength="100"
+              placeholder="Enter doctor's full name"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="specialization">Specialization *</label>
+            <input
+              id="specialization"
+              name="specialization"
+              type="text"
+              [(ngModel)]="form.specialization"
+              placeholder="e.g. Cardiology"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="phone">Phone *</label>
+            <input
+              id="phone"
+              name="phone"
+              type="tel"
+              [(ngModel)]="form.phone"
+              placeholder="Enter phone number"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              [(ngModel)]="form.email"
+              placeholder="Enter email address"
+              email
+            />
+          </div>
+
+          <div class="form-group full-width">
+            <label for="available">Availability</label>
+            <select
+              id="available"
+              name="available"
+              [(ngModel)]="form.available"
+            >
+              <option [ngValue]="true">Available</option>
+              <option [ngValue]="false">Unavailable</option>
+            </select>
+          </div>
+        </div>
+
+        <p *ngIf="errorMessage" class="alert error" role="alert">
+          {{ errorMessage }}
+        </p>
+
+        <div class="form-actions">
+          <button
+            type="button"
+            class="secondary-button"
+            (click)="cancelForm()"
+            [disabled]="saving"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            class="primary-button"
+            [disabled]="saving || doctorForm.invalid"
+          >
+            {{ saving
+              ? (isEditing ? 'Saving Changes...' : 'Adding Doctor...')
+              : (isEditing ? 'Save Changes' : 'Save Doctor') }}
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <!-- All authorized roles can view the directory and availability -->
+    <section class="list-card">
+      <div class="list-heading">
+        <div>
+          <h2>Doctor Directory</h2>
+          <p>{{ filteredDoctors.length }} doctor(s) displayed</p>
+        </div>
+
+        <button
+          type="button"
+          class="secondary-button"
+          (click)="loadDoctors()"
+          [disabled]="loading"
+        >
+          {{ loading ? 'Loading...' : 'Refresh' }}
+        </button>
+      </div>
+
+      <div class="search-box">
+        <input
+          type="search"
+          name="searchTerm"
+          [(ngModel)]="searchTerm"
+          placeholder="Search by name, specialization, phone or email..."
+          aria-label="Search doctors"
+        />
+      </div>
+
+      <div *ngIf="loading" class="empty-state">
+        Loading doctors...
+      </div>
+
+      <div
+        *ngIf="!loading && filteredDoctors.length === 0"
+        class="empty-state"
+      >
+        <h3>No doctors found</h3>
+        <p>
+          {{ searchTerm
+            ? 'Try another search term.'
+            : 'Doctors will appear here when available.' }}
+        </p>
+      </div>
+
+      <div
+        *ngIf="!loading && filteredDoctors.length > 0"
+        class="table-wrapper"
+      >
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Doctor</th>
+              <th>Specialization</th>
+              <th>Phone</th>
+              <th>Email</th>
+              <th>Availability</th>
+              <th *ngIf="canManageDoctors">Action</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr *ngFor="let doctor of filteredDoctors">
+              <td>{{ doctor.id ?? '—' }}</td>
+              <td class="doctor-name">{{ doctor.name }}</td>
+              <td>{{ doctor.specialization }}</td>
+              <td>{{ doctor.phone }}</td>
+              <td>{{ doctor.email || '—' }}</td>
+              <td>
+                <span
+                  class="status"
+                  [class.available]="doctor.available"
+                  [class.unavailable]="!doctor.available"
+                >
+                  {{ doctor.available ? 'Available' : 'Unavailable' }}
+                </span>
+              </td>
+
+              <td *ngIf="canManageDoctors">
+                <button
+                  type="button"
+                  class="edit-button"
+                  (click)="editDoctor(doctor)"
+                  [disabled]="saving || doctor.id == null"
+                >
+                  Edit
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</div>

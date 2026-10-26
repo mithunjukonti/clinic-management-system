@@ -1,0 +1,307 @@
+
+<div class="appointments-page">
+  <header class="topbar">
+    <a
+      class="brand"
+      [routerLink]="isDoctor ? '/doctor-dashboard' : (userRole === 'ADMIN' ? '/admin-dashboard' : '/staff-dashboard')"
+    >
+      <span class="brand-mark">+</span>
+      <span>Clinic Management</span>
+    </a>
+
+    <a
+      class="back-link"
+      [routerLink]="isDoctor ? '/doctor-dashboard' : (userRole === 'ADMIN' ? '/admin-dashboard' : '/staff-dashboard')"
+    >
+      Back to Dashboard
+    </a>
+  </header>
+
+  <main class="content">
+    <div class="page-heading">
+      <div>
+        <p class="eyebrow">CLINIC OPERATIONS</p>
+        <h1>Appointments</h1>
+        <p class="description">
+          View and manage clinic appointments.
+        </p>
+      </div>
+
+      <button
+        *ngIf="canBook"
+        type="button"
+        class="primary-button"
+        (click)="openForm()"
+        [disabled]="showForm"
+      >
+        + Book Appointment
+      </button>
+    </div>
+
+    <div *ngIf="successMessage" class="alert success" role="status">
+      {{ successMessage }}
+    </div>
+
+    <div
+      *ngIf="errorMessage && !showForm"
+      class="alert error"
+      role="alert"
+    >
+      {{ errorMessage }}
+    </div>
+
+    <section *ngIf="showForm && canBook" class="form-card">
+      <div class="form-heading">
+        <div>
+          <h2>Book New Appointment</h2>
+          <p>Select a patient, doctor, and future appointment time.</p>
+        </div>
+
+        <button
+          type="button"
+          class="secondary-button"
+          (click)="cancelForm()"
+          [disabled]="saving"
+        >
+          Cancel
+        </button>
+      </div>
+
+      <form #appointmentForm="ngForm" (ngSubmit)="bookAppointment()">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="patientId">Patient *</label>
+
+            <select
+              id="patientId"
+              name="patientId"
+              [(ngModel)]="form.patientId"
+              required
+            >
+              <option [ngValue]="null">Select patient</option>
+
+              <option
+                *ngFor="let patient of patients"
+                [ngValue]="patient.id"
+              >
+                {{ patient.name }}
+                — Age: {{ getPatientAge(patient.dateOfBirth) ?? 'N/A' }}
+                — {{ patient.gender || 'Gender not specified' }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="doctorId">Doctor *</label>
+
+            <select
+              id="doctorId"
+              name="doctorId"
+              [(ngModel)]="form.doctorId"
+              required
+            >
+              <option [ngValue]="null">Select doctor</option>
+
+              <option
+                *ngFor="let doctor of doctors"
+                [ngValue]="doctor.id"
+                [disabled]="doctor.available === false"
+              >
+                {{ doctor.name }}
+                — {{ doctor.specialization || 'Specialty not specified' }}
+                — {{ doctor.available === false ? 'Unavailable' : 'Available' }}
+              </option>
+            </select>
+
+            <small class="field-hint">
+              Unavailable doctors cannot be selected for a new appointment.
+            </small>
+          </div>
+
+          <div class="form-group">
+            <label for="appointmentDateTime">Date and Time *</label>
+
+            <input
+              id="appointmentDateTime"
+              name="appointmentDateTime"
+              type="datetime-local"
+              [(ngModel)]="form.appointmentDateTime"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="reason">Reason for Visit</label>
+
+            <textarea
+              id="reason"
+              name="reason"
+              [(ngModel)]="form.reason"
+              maxlength="500"
+              rows="3"
+              placeholder="Describe the reason for the appointment"
+            ></textarea>
+          </div>
+        </div>
+
+        <p *ngIf="errorMessage" class="alert error" role="alert">
+          {{ errorMessage }}
+        </p>
+
+        <div class="form-actions">
+          <button
+            type="button"
+            class="secondary-button"
+            (click)="cancelForm()"
+            [disabled]="saving"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            class="primary-button"
+            [disabled]="saving || appointmentForm.invalid"
+          >
+            {{ saving ? 'Booking...' : 'Confirm Appointment' }}
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <section class="list-card">
+      <div class="list-heading">
+        <div>
+          <h2>Appointment Directory</h2>
+          <p>{{ filteredAppointments.length }} appointment(s) displayed</p>
+        </div>
+
+        <button
+          type="button"
+          class="secondary-button"
+          (click)="loadAppointments()"
+          [disabled]="loading"
+        >
+          {{ loading ? 'Loading...' : 'Refresh' }}
+        </button>
+      </div>
+
+      <div class="search-box">
+        <input
+          type="search"
+          name="searchTerm"
+          [(ngModel)]="searchTerm"
+          placeholder="Search patient, doctor, status, or ID..."
+          aria-label="Search appointments"
+        />
+      </div>
+
+      <div *ngIf="loading" class="empty-state">
+        Loading appointments...
+      </div>
+
+      <div
+        *ngIf="!loading && filteredAppointments.length === 0"
+        class="empty-state"
+      >
+        <h3>No appointments found</h3>
+        <p>
+          {{ searchTerm
+            ? 'Try another search term.'
+            : 'Appointments will appear here when available.' }}
+        </p>
+      </div>
+
+      <div
+        *ngIf="!loading && filteredAppointments.length > 0"
+        class="table-wrapper"
+      >
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Patient</th>
+              <th>Doctor</th>
+              <th>Date &amp; Time</th>
+              <th>Reason</th>
+              <th>Status</th>
+              <th *ngIf="canCancel || canComplete">Actions</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr *ngFor="let appointment of filteredAppointments">
+              <td>{{ appointment.id ?? '—' }}</td>
+
+              <td class="person-name">
+                {{ appointment.patient?.name || 'Unknown patient' }}
+                <small class="person-detail">
+                  Age:
+                  {{ getPatientAge(appointment.patient?.dateOfBirth) ?? 'N/A' }}
+                  · {{ appointment.patient?.gender || 'Gender not specified' }}
+                </small>
+              </td>
+
+              <td>
+                <span class="person-name">
+                  {{ appointment.doctor?.name || 'Unknown doctor' }}
+                </span>
+                <small class="person-detail">
+                  {{ appointment.doctor?.specialization || 'Specialty not specified' }}
+                </small>
+              </td>
+
+              <td>
+                {{ appointment.appointmentDateTime | date:'medium' }}
+              </td>
+
+              <td class="reason-cell">
+                {{ appointment.reason || '—' }}
+              </td>
+
+              <td>
+                <span
+                  class="status"
+                  [class.booked]="appointment.status?.toUpperCase() === 'BOOKED'"
+                  [class.cancelled]="appointment.status?.toUpperCase() === 'CANCELLED'"
+                  [class.completed]="appointment.status?.toUpperCase() === 'COMPLETED'"
+                >
+                  {{ appointment.status || 'Unknown' }}
+                </span>
+              </td>
+
+              <td
+                *ngIf="canCancel || canComplete"
+                class="actions-cell"
+              >
+                <ng-container *ngIf="isBooked(appointment)">
+                  <button
+                    *ngIf="canComplete"
+                    type="button"
+                    class="complete-button"
+                    (click)="completeAppointment(appointment)"
+                  >
+                    Complete
+                  </button>
+
+                  <button
+                    *ngIf="canCancel"
+                    type="button"
+                    class="cancel-button"
+                    (click)="cancelAppointment(appointment)"
+                  >
+                    Cancel
+                  </button>
+                </ng-container>
+
+                <span *ngIf="!isBooked(appointment)" class="no-action">
+                  —
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</div>
