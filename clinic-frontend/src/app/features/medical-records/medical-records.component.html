@@ -1,403 +1,531 @@
-
 <div class="medical-records-page">
+
+  <!-- Top Navigation -->
   <header class="page-header">
-    <div class="page-heading">
-      <p class="eyebrow">DOCTOR WORKSPACE</p>
-      <h1>Medical Records</h1>
-      <p class="subtitle">
-        Manage patient histories, diagnoses, treatments and follow-ups.
-      </p>
-    </div>
+    <a routerLink="/doctor-dashboard" class="clinic-brand" aria-label="Go to Doctor Dashboard">
+      <span class="clinic-logo">+</span>
+      <span class="clinic-name">Clinic Management</span>
+    </a>
 
     <a routerLink="/doctor-dashboard" class="back-button">
       Back to Dashboard
     </a>
   </header>
 
-  <section class="patients-section">
-    <div class="section-heading">
-      <div>
-        <h2>Your Patients</h2>
-        <p class="section-description">
-          Patients with completed appointments assigned to you.
-        </p>
+  <!-- Page Content -->
+  <main class="medical-records-content">
+
+    <!-- Patient Directory -->
+    <section class="patients-section">
+
+      <div class="page-title-row">
+        <div>
+          <p class="eyebrow">CLINIC OPERATIONS</p>
+          <h1>Medical Records</h1>
+          <p class="subtitle">
+            View patient consultation history, diagnoses and treatment plans.
+          </p>
+        </div>
       </div>
 
-      <button
-        type="button"
-        class="refresh-button"
-        (click)="loadAppointments()"
-        [disabled]="loadingAppointments"
-      >
-        {{ loadingAppointments ? 'Refreshing...' : 'Refresh Patients' }}
-      </button>
-    </div>
+      <div class="directory-card">
 
-    <div class="search-wrapper">
-      <span class="search-icon" aria-hidden="true">⌕</span>
-
-      <input
-        type="search"
-        class="search-input"
-        placeholder="Search by patient name or ID..."
-        aria-label="Search patients by name or ID"
-        [(ngModel)]="searchTerm"
-      />
-
-      <button
-        *ngIf="searchTerm"
-        type="button"
-        class="clear-search"
-        aria-label="Clear patient search"
-        (click)="clearSearch()"
-      >
-        ×
-      </button>
-    </div>
-
-    <p *ngIf="loadingAppointments" class="info-message">
-      Loading your patients...
-    </p>
-
-    <div *ngIf="appointmentsError" class="error-message" role="alert">
-      {{ appointmentsError }}
-      <button
-        type="button"
-        class="text-button"
-        (click)="loadAppointments()"
-      >
-        Try again
-      </button>
-    </div>
-
-    <div
-      *ngIf="
-        !loadingAppointments &&
-        !appointmentsError &&
-        patients.length === 0
-      "
-      class="empty-state"
-    >
-      <div class="empty-icon">P</div>
-      <h3>No patients available yet</h3>
-      <p>
-        Patients appear here after you complete their consultations.
-      </p>
-      <a routerLink="/appointments" class="text-link">
-        Go to My Appointments →
-      </a>
-    </div>
-
-    <div
-      *ngIf="
-        !loadingAppointments &&
-        !appointmentsError &&
-        patients.length > 0 &&
-        filteredPatients.length === 0
-      "
-      class="empty-state compact-empty"
-    >
-      <h3>No matching patients</h3>
-      <p>Try searching with a different name or patient ID.</p>
-      <button
-        type="button"
-        class="text-button"
-        (click)="clearSearch()"
-      >
-        Clear search
-      </button>
-    </div>
-
-    <div
-      class="patient-grid"
-      *ngIf="!loadingAppointments && filteredPatients.length > 0"
-    >
-      <button
-        type="button"
-        class="patient-card"
-        *ngFor="let patient of filteredPatients"
-        [class.selected]="selectedPatientId === patient.id"
-        [attr.aria-pressed]="selectedPatientId === patient.id"
-        (click)="selectPatient(patient.id)"
-      >
-        <div class="patient-card-top">
-          <div class="patient-avatar" aria-hidden="true">
-            {{ patient.name.charAt(0).toUpperCase() }}
+        <div class="section-heading">
+          <div>
+            <h2>Your Patients</h2>
+            <p class="section-description">
+              Select a patient to view their clinical history.
+            </p>
           </div>
 
-          <span
-            class="selection-indicator"
-            *ngIf="selectedPatientId === patient.id"
-            aria-label="Selected patient"
-          >
-            ✓
-          </span>
+          <button
+            type="button"
+            class="secondary-button"
+            (click)="loadAppointments()"
+            [disabled]="loadingAppointments">
+            {{ loadingAppointments ? 'Refreshing...' : 'Refresh' }}
+          </button>
         </div>
 
-        <div class="patient-card-info">
-          <h3>{{ patient.name }}</h3>
-          <p class="patient-id">Patient ID: {{ patient.id }}</p>
+        <!-- Patient Search -->
+        <div class="search-wrapper">
+          <span aria-hidden="true">⌕</span>
+
+          <input
+            type="search"
+            [(ngModel)]="searchTerm"
+            placeholder="Search patient name or ID..."
+            aria-label="Search patients" />
+
+          <button
+            *ngIf="searchTerm"
+            type="button"
+            class="clear-search"
+            (click)="clearSearch()"
+            aria-label="Clear search">
+            ×
+          </button>
         </div>
 
-        <div class="patient-card-footer">
-          <span class="appointment-count">
-            {{ patient.completedAppointments }}
-            {{
-              patient.completedAppointments === 1
-                ? 'completed appointment'
-                : 'completed appointments'
-            }}
-          </span>
-          <span class="view-patient">View records →</span>
+        <!-- Loading -->
+        <div *ngIf="loadingAppointments" class="info-message">
+          Loading patients...
         </div>
-      </button>
-    </div>
-  </section>
 
-  <section
-    class="records-section"
-    *ngIf="selectedPatientId !== null"
-  >
-    <div class="records-section-heading">
-      <div>
-        <p class="eyebrow">PATIENT HISTORY</p>
-        <h2>Medical Records</h2>
-        <p class="section-description">
-          {{ selectedPatient?.name }} · Patient ID: {{ selectedPatientId }}
-        </p>
+        <!-- Error -->
+        <div *ngIf="appointmentsError" class="error-message" role="alert">
+          {{ appointmentsError }}
+          <button
+            type="button"
+            class="text-button"
+            (click)="loadAppointments()">
+            Try again
+          </button>
+        </div>
+
+        <!-- No Patients -->
+        <div
+          *ngIf="!loadingAppointments && !appointmentsError && patients.length === 0"
+          class="empty-state">
+          <div class="empty-icon">+</div>
+          <h3>No patients yet</h3>
+          <p>Patients will appear after their consultations are completed.</p>
+          <a routerLink="/appointments" class="text-link">
+            View appointments →
+          </a>
+        </div>
+
+        <!-- No Search Results -->
+        <div
+          *ngIf="!loadingAppointments && patients.length > 0 && filteredPatients.length === 0"
+          class="empty-state">
+          <h3>No matching patients</h3>
+          <p>Try another patient name or ID.</p>
+        </div>
+
+        <!-- Patient Cards -->
+        <div
+          class="patient-grid"
+          *ngIf="!loadingAppointments && filteredPatients.length > 0">
+
+          <button
+            type="button"
+            class="patient-card"
+            *ngFor="let patient of filteredPatients"
+            [class.selected]="selectedPatientId === patient.id"
+            [attr.aria-pressed]="selectedPatientId === patient.id"
+            (click)="selectPatient(patient.id)">
+
+            <div class="patient-avatar">
+              {{ patient.name.charAt(0).toUpperCase() }}
+            </div>
+
+            <div class="patient-card-info">
+              <h3>{{ patient.name }}</h3>
+              <p>Patient ID: {{ patient.id }}</p>
+              <span class="patient-visit-count">
+                {{ patient.completedAppointments }}
+                {{ patient.completedAppointments === 1 ? 'completed visit' : 'completed visits' }}
+              </span>
+            </div>
+
+            <span class="patient-arrow">
+              {{ selectedPatientId === patient.id ? 'Selected ✓' : 'View →' }}
+            </span>
+          </button>
+
+        </div>
       </div>
+    </section>
 
-      <button
-        type="button"
-        class="primary-button"
-        (click)="openCreateForm()"
-        [disabled]="completedAppointmentsForPatient.length === 0"
-      >
-        + Create Medical Record
-      </button>
-    </div>
+    <!-- Selected Patient Workspace -->
+    <section class="workspace" *ngIf="selectedPatientId !== null">
 
-    <div *ngIf="successMessage" class="success-message" role="status">
-      {{ successMessage }}
-    </div>
-
-    <section class="record-form-card" *ngIf="showCreateForm">
-      <div class="form-heading">
+      <div class="workspace-heading">
         <div>
-          <p class="eyebrow">NEW CONSULTATION RECORD</p>
-          <h3>Create Medical Record</h3>
+          <p class="eyebrow">PATIENT CHART</p>
+          <h2>{{ selectedPatient?.name }}</h2>
           <p class="section-description">
-            Record clinical information for a completed appointment.
+            Patient #{{ selectedPatientId }} · Clinical history and visit records
           </p>
         </div>
 
         <button
           type="button"
-          class="close-form-button"
-          aria-label="Close form"
-          (click)="cancelCreateForm()"
-          [disabled]="savingRecord"
-        >
-          ×
+          class="primary-button"
+          (click)="openCreateForm()"
+          [disabled]="availableAppointments.length === 0 || showCreateForm">
+          + New Medical Record
         </button>
       </div>
 
-      <form (ngSubmit)="saveMedicalRecord()" #recordForm="ngForm">
-        <div class="form-grid">
-          <div class="form-field full-width">
-            <label for="appointmentId">Completed Appointment *</label>
-            <select
-              id="appointmentId"
-              name="appointmentId"
-              [(ngModel)]="selectedAppointmentId"
-              required
-            >
-              <option [ngValue]="null" disabled>
-                Choose a completed appointment
-              </option>
-              <option
-                *ngFor="let appointment of completedAppointmentsForPatient"
-                [ngValue]="appointment.id"
-              >
-                Appointment #{{ appointment.id }} —
-                {{ appointment.appointmentDateTime | date:'medium' }}
-              </option>
-            </select>
-            <small>
-              Each appointment can have only one medical record.
-            </small>
+      <!-- Summary Statistics -->
+      <div class="stats-grid">
+
+        <article class="stat-card">
+          <span class="stat-label">Medical Records</span>
+          <strong>{{ totalRecords }}</strong>
+          <span class="stat-note">Saved clinical records</span>
+        </article>
+
+        <article class="stat-card">
+          <span class="stat-label">Completed Visits</span>
+          <strong>{{ completedVisitCount }}</strong>
+          <span class="stat-note">Completed consultations</span>
+        </article>
+
+        <article class="stat-card">
+          <span class="stat-label">Awaiting Records</span>
+          <strong>{{ pendingRecordCount }}</strong>
+          <span class="stat-note">Visits without a record</span>
+        </article>
+
+        <article class="stat-card">
+          <span class="stat-label">Follow-ups</span>
+          <strong>{{ followUpCount }}</strong>
+          <span class="stat-note">Upcoming or today</span>
+        </article>
+
+      </div>
+
+      <!-- Success Message -->
+      <div *ngIf="successMessage" class="success-message" role="status">
+        ✓ {{ successMessage }}
+      </div>
+
+      <!-- Create/Edit Medical Record -->
+      <section class="record-form-card" *ngIf="showCreateForm">
+
+        <div class="form-heading">
+          <div>
+            <p class="eyebrow">
+              {{ editingRecord ? 'UPDATE CLINICAL NOTES' : 'NEW CONSULTATION' }}
+            </p>
+
+            <h3>
+              {{ editingRecord ? 'Edit Medical Record #' + editingRecord.id : 'Create Medical Record' }}
+            </h3>
+
+            <p class="section-description">
+              Enter accurate clinical information for this patient.
+            </p>
           </div>
 
-          <div class="form-field">
-            <label for="symptoms">Symptoms *</label>
-            <textarea
-              id="symptoms"
-              name="symptoms"
-              rows="3"
-              maxlength="1000"
-              [(ngModel)]="form.symptoms"
-              placeholder="Describe the patient's symptoms"
-              required
-            ></textarea>
-          </div>
-
-          <div class="form-field">
-            <label for="diagnosis">Diagnosis *</label>
-            <textarea
-              id="diagnosis"
-              name="diagnosis"
-              rows="3"
-              maxlength="500"
-              [(ngModel)]="form.diagnosis"
-              placeholder="Enter the diagnosis"
-              required
-            ></textarea>
-          </div>
-
-          <div class="form-field">
-            <label for="treatment">Treatment *</label>
-            <textarea
-              id="treatment"
-              name="treatment"
-              rows="3"
-              maxlength="1000"
-              [(ngModel)]="form.treatment"
-              placeholder="Describe the treatment plan"
-              required
-            ></textarea>
-          </div>
-
-          <div class="form-field">
-            <label for="prescription">Prescription</label>
-            <textarea
-              id="prescription"
-              name="prescription"
-              rows="3"
-              maxlength="1000"
-              [(ngModel)]="form.prescription"
-              placeholder="Enter medication and instructions, if applicable"
-            ></textarea>
-          </div>
-
-          <div class="form-field">
-            <label for="followUpDate">Follow-up Date (optional)</label>
-            <input
-              id="followUpDate"
-              name="followUpDate"
-              type="date"
-              [(ngModel)]="form.followUpDate"
-            />
-          </div>
-
-          <div class="form-field">
-            <label>Visit Date</label>
-            <div class="readonly-field">
-              {{
-                selectedAppointment?.appointmentDateTime
-                  ? (selectedAppointment?.appointmentDateTime | date:'longDate')
-                  : 'Select an appointment above'
-              }}
-            </div>
-            <small>Automatically derived from the appointment.</small>
-          </div>
-        </div>
-
-        <div *ngIf="formError" class="error-message" role="alert">
-          {{ formError }}
-        </div>
-
-        <div class="form-actions">
           <button
             type="button"
-            class="secondary-button"
+            class="close-form-button"
             (click)="cancelCreateForm()"
             [disabled]="savingRecord"
-          >
-            Cancel
+            aria-label="Close form">
+            ×
           </button>
+        </div>
+
+        <form (ngSubmit)="saveMedicalRecord()" #recordForm="ngForm">
+
+          <div class="form-grid">
+
+            <div class="form-field full-width" *ngIf="!editingRecord">
+              <label for="appointmentId">Completed Appointment *</label>
+
+              <select
+                id="appointmentId"
+                name="appointmentId"
+                [(ngModel)]="selectedAppointmentId"
+                required>
+                <option [ngValue]="null" disabled>
+                  Choose an appointment
+                </option>
+
+                <option
+                  *ngFor="let appointment of availableAppointments"
+                  [ngValue]="appointment.id">
+                  Appointment #{{ appointment.id }} —
+                  {{ appointment.appointmentDateTime | date:'medium' }}
+                </option>
+              </select>
+
+              <small>
+                Appointments with existing medical records are excluded.
+              </small>
+            </div>
+
+            <div class="form-field full-width" *ngIf="editingRecord">
+              <label>Linked Appointment</label>
+
+              <div class="readonly-field">
+                Appointment #{{ editingRecord.appointment.id }}
+                · {{ editingRecord.visitDate | date:'longDate' }}
+              </div>
+
+              <small>The linked patient and visit date cannot be changed here.</small>
+            </div>
+
+            <div class="form-field">
+              <label for="symptoms">Symptoms *</label>
+
+              <textarea
+                id="symptoms"
+                name="symptoms"
+                [(ngModel)]="form.symptoms"
+                maxlength="1000"
+                rows="4"
+                placeholder="Describe the reported symptoms..."
+                required></textarea>
+
+              <small>{{ form.symptoms.length }}/1000 characters</small>
+            </div>
+
+            <div class="form-field">
+              <label for="diagnosis">Diagnosis *</label>
+
+              <textarea
+                id="diagnosis"
+                name="diagnosis"
+                [(ngModel)]="form.diagnosis"
+                maxlength="500"
+                rows="4"
+                placeholder="Enter the clinical diagnosis..."
+                required></textarea>
+
+              <small>{{ form.diagnosis.length }}/500 characters</small>
+            </div>
+
+            <div class="form-field">
+              <label for="treatment">Treatment Plan *</label>
+
+              <textarea
+                id="treatment"
+                name="treatment"
+                [(ngModel)]="form.treatment"
+                maxlength="1000"
+                rows="4"
+                placeholder="Document the treatment plan..."
+                required></textarea>
+            </div>
+
+            <div class="form-field">
+              <label for="prescription">Prescription</label>
+
+              <textarea
+                id="prescription"
+                name="prescription"
+                [(ngModel)]="form.prescription"
+                maxlength="1000"
+                rows="4"
+                placeholder="Medication and instructions, if applicable..."></textarea>
+            </div>
+
+            <div class="form-field">
+              <label for="followUpDate">Follow-up Date</label>
+
+              <input
+                id="followUpDate"
+                name="followUpDate"
+                type="date"
+                [(ngModel)]="form.followUpDate" />
+
+              <small>Leave blank if no follow-up is required.</small>
+            </div>
+
+            <div class="form-field">
+              <label>Visit Date</label>
+
+              <div class="readonly-field">
+                {{
+                  editingRecord
+                    ? (editingRecord.visitDate | date:'longDate')
+                    : (selectedAppointment?.appointmentDateTime
+                        ? (selectedAppointment?.appointmentDateTime | date:'longDate')
+                        : 'Select an appointment')
+                }}
+              </div>
+
+              <small>Derived from the completed appointment.</small>
+            </div>
+
+          </div>
+
+          <div *ngIf="formError" class="error-message" role="alert">
+            {{ formError }}
+          </div>
+
+          <div class="form-actions">
+            <button
+              type="button"
+              class="secondary-button"
+              (click)="cancelCreateForm()"
+              [disabled]="savingRecord">
+              Cancel
+            </button>
+
+            <button
+              type="submit"
+              class="primary-button"
+              [disabled]="savingRecord || recordForm.invalid ||
+                (!editingRecord && selectedAppointmentId === null)">
+              {{
+                savingRecord
+                  ? 'Saving...'
+                  : (editingRecord ? 'Save Changes' : 'Save Medical Record')
+              }}
+            </button>
+          </div>
+
+        </form>
+      </section>
+
+      <!-- Loading History -->
+      <div *ngIf="loadingRecords" class="loading-panel">
+        <span class="loader"></span>
+        <p>Loading patient history...</p>
+      </div>
+
+      <!-- History Error -->
+      <div *ngIf="recordsError" class="error-message" role="alert">
+        {{ recordsError }}
+
+        <button
+          type="button"
+          class="text-button"
+          (click)="loadRecords()">
+          Try again
+        </button>
+      </div>
+
+      <!-- Medical History -->
+      <section
+        class="history-section"
+        *ngIf="!loadingRecords && !recordsError">
+
+        <div class="history-heading">
+          <div>
+            <p class="eyebrow">CLINICAL TIMELINE</p>
+            <h3>Medical History</h3>
+          </div>
+
+          <span class="record-count">
+            {{ records.length }} {{ records.length === 1 ? 'record' : 'records' }}
+          </span>
+        </div>
+
+        <!-- Empty History -->
+        <div *ngIf="records.length === 0" class="empty-state history-empty">
+          <div class="empty-icon">+</div>
+          <h3>No medical records yet</h3>
+
+          <p>
+            This patient's history is empty. Create a record for a completed
+            appointment to begin documenting their clinical history.
+          </p>
 
           <button
-            type="submit"
+            type="button"
             class="primary-button"
-            [disabled]="savingRecord || recordForm.invalid"
-          >
-            {{ savingRecord ? 'Saving Record...' : 'Save Medical Record' }}
+            (click)="openCreateForm()"
+            [disabled]="availableAppointments.length === 0 || showCreateForm">
+            Create First Record
           </button>
+
+          <p *ngIf="availableAppointments.length === 0">
+            There are no completed appointments awaiting a record.
+          </p>
         </div>
-      </form>
+
+        <!-- Existing Records -->
+        <div class="timeline" *ngIf="records.length > 0">
+
+          <article
+            class="record-card"
+            *ngFor="let record of records; trackBy: trackRecordById">
+
+            <div class="timeline-marker"></div>
+
+            <div class="record-card-inner">
+
+              <div class="record-heading">
+                <div>
+                  <span class="record-id">RECORD #{{ record.id }}</span>
+                  <h4>{{ record.diagnosis }}</h4>
+
+                  <p class="record-meta">
+                    Visit: {{ record.visitDate | date:'mediumDate' }}
+
+                    <span *ngIf="record.appointment?.id">
+                      · Appointment #{{ record.appointment.id }}
+                    </span>
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  class="edit-button"
+                  (click)="editMedicalRecord(record)"
+                  [disabled]="showCreateForm">
+                  Edit Record
+                </button>
+              </div>
+
+              <div class="record-detail-grid">
+
+                <section class="record-detail">
+                  <h5><span class="detail-icon">01</span> Symptoms</h5>
+                  <p>{{ record.symptoms || 'Not specified' }}</p>
+                </section>
+
+                <section class="record-detail">
+                  <h5><span class="detail-icon">02</span> Treatment Plan</h5>
+                  <p>{{ record.treatment || 'Not specified' }}</p>
+                </section>
+
+                <section class="record-detail">
+                  <h5><span class="detail-icon">03</span> Prescription</h5>
+                  <p>{{ record.prescription || 'No prescription recorded' }}</p>
+                </section>
+
+                <section class="record-detail follow-up-detail">
+                  <h5><span class="detail-icon">04</span> Follow-up</h5>
+
+                  <p *ngIf="record.followUpDate">
+                    {{ record.followUpDate | date:'longDate' }}
+                  </p>
+
+                  <p *ngIf="!record.followUpDate">Not scheduled</p>
+                </section>
+
+              </div>
+
+              <div class="record-footer">
+                <span>
+                  <span class="status-dot"></span>
+                  Saved clinical record
+                </span>
+
+                <span *ngIf="record.createdAt">
+                  Created {{ record.createdAt | date:'medium' }}
+                </span>
+              </div>
+
+            </div>
+          </article>
+
+        </div>
+      </section>
     </section>
 
-    <p *ngIf="loadingRecords" class="info-message">
-      Loading medical records...
-    </p>
+    <!-- No Patient Selected -->
+    <section
+      class="select-patient-prompt"
+      *ngIf="selectedPatientId === null && patients.length > 0">
 
-    <div *ngIf="recordsError" class="error-message" role="alert">
-      {{ recordsError }}
-      <button
-        type="button"
-        class="text-button"
-        (click)="loadRecords()"
-        [disabled]="loadingRecords"
-      >
-        Try again
-      </button>
-    </div>
+      <div class="prompt-icon">↖</div>
+      <h2>Select a patient to begin</h2>
 
-    <div
-      *ngIf="
-        !loadingRecords &&
-        !recordsError &&
-        records.length === 0
-      "
-      class="empty-state records-empty"
-    >
-      <h3>No medical records found</h3>
       <p>
-        No medical records have been saved for this patient yet.
-        You can create one for a completed appointment.
+        Choose a patient above to view their clinical history, review treatment
+        plans and manage medical records.
       </p>
-    </div>
+    </section>
 
-    <div
-      class="records-list"
-      *ngIf="!loadingRecords && records.length > 0"
-    >
-      <article class="record-card" *ngFor="let record of records">
-        <div class="record-heading">
-          <div>
-            <span class="record-id">RECORD #{{ record.id }}</span>
-            <h3>{{ record.diagnosis }}</h3>
-          </div>
-          <span class="visit-date">{{ record.visitDate }}</span>
-        </div>
-
-        <div class="record-details">
-          <section class="record-detail">
-            <h4>Symptoms</h4>
-            <p>{{ record.symptoms || 'Not specified' }}</p>
-          </section>
-
-          <section class="record-detail">
-            <h4>Treatment</h4>
-            <p>{{ record.treatment }}</p>
-          </section>
-
-          <section class="record-detail">
-            <h4>Prescription</h4>
-            <p>{{ record.prescription || 'Not specified' }}</p>
-          </section>
-
-          <section class="record-detail">
-            <h4>Follow-up date</h4>
-            <p>{{ record.followUpDate || 'Not scheduled' }}</p>
-          </section>
-
-          <section class="record-detail">
-            <h4>Appointment ID</h4>
-            <p>{{ record.appointment?.id ?? 'Not available' }}</p>
-          </section>
-        </div>
-      </article>
-    </div>
-  </section>
+  </main>
 </div>

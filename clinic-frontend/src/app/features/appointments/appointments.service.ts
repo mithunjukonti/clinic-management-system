@@ -1,4 +1,3 @@
-
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -8,12 +7,8 @@ export interface AppointmentPerson {
   name: string;
   phone?: string;
   email?: string;
-
-  // Patient details
   dateOfBirth?: string;
   gender?: string;
-
-  // Doctor details
   specialization?: string;
   available?: boolean;
 }
@@ -34,6 +29,17 @@ export interface AppointmentRequest {
   reason: string | null;
 }
 
+export interface CompleteAppointmentRequest {
+  patient: { id: number };
+  appointment: { id: number };
+  symptoms: string;
+  diagnosis: string;
+  treatment: string;
+  prescription: string;
+  visitDate: string;
+  followUpDate?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -41,6 +47,8 @@ export class AppointmentsService {
   private readonly apiUrl = 'http://localhost:8080/api/appointments';
   private readonly patientsUrl = 'http://localhost:8080/api/patients';
   private readonly doctorsUrl = 'http://localhost:8080/api/doctors';
+  private readonly medicalRecordsUrl =
+    'http://localhost:8080/api/medical-records';
 
   constructor(private readonly http: HttpClient) {}
 
@@ -82,10 +90,13 @@ export class AppointmentsService {
     );
   }
 
-  completeAppointment(id: number): Observable<Appointment> {
-    return this.http.patch<Appointment>(
-      `${this.apiUrl}/${id}/complete`,
-      {}
+  completeAppointmentWithRecord(
+    appointmentId: number,
+    request: CompleteAppointmentRequest
+  ): Observable<unknown> {
+    return this.http.post(
+      `${this.medicalRecordsUrl}/complete-appointment/${appointmentId}`,
+      request
     );
   }
 }

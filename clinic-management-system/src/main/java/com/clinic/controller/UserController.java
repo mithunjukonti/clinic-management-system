@@ -1,11 +1,11 @@
+
 package com.clinic.controller;
 
 import java.util.List;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.access.AccessDeniedException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,6 +20,9 @@ import com.clinic.entity.User;
 import com.clinic.service.UserService;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 @RestController
 @RequestMapping("/api/users")
@@ -30,11 +33,13 @@ public class UserController {
     public UserController(UserService userService) {
         this.userService = userService;
     }
-    
-    @GetMapping("/me")
-    public ResponseEntity<User> getCurrentUser(Authentication authentication) {
 
-        User user = userService.getUserByUsername(authentication.getName());
+    @GetMapping("/me")
+    public ResponseEntity<User> getCurrentUser(
+            Authentication authentication) {
+
+        User user = userService.getUserByUsername(
+                authentication.getName());
 
         return ResponseEntity.ok(user);
     }
@@ -62,7 +67,8 @@ public class UserController {
     public ResponseEntity<User> getUserById(
             @PathVariable Long id) {
 
-        return ResponseEntity.ok(userService.getUserById(id));
+        return ResponseEntity.ok(
+                userService.getUserById(id));
     }
 
     // ADMIN: Delete user by ID.
@@ -75,7 +81,7 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    // ADMIN: Create a doctor login account without a profile link.
+    // ADMIN: Create a doctor login account without linking a profile.
     @PostMapping("/doctors")
     public ResponseEntity<User> createDoctor(
             @Valid @RequestBody User user) {
@@ -101,13 +107,34 @@ public class UserController {
                 .body(savedUser);
     }
 
-    // Link an existing doctor account to an existing doctor profile.
+    // ADMIN: Create a doctor login account linked to an existing profile.
+    @PostMapping("/doctors/create-linked")
+    public ResponseEntity<User> createLinkedDoctorAccount(
+            @Valid @RequestBody LinkedDoctorAccountRequest request) {
+
+        User user = new User();
+        user.setUsername(request.getUsername());
+        user.setEmail(request.getEmail());
+        user.setPassword(request.getPassword());
+
+        User savedUser = userService.createLinkedDoctorAccount(
+                user,
+                request.getDoctorId());
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(savedUser);
+    }
+
+    // ADMIN: Link an existing doctor account to an existing profile.
     @PostMapping("/{userId}/link-doctor")
     public ResponseEntity<User> linkDoctorAccount(
             @PathVariable Long userId,
             @RequestParam Long doctorId) {
 
-        User linkedUser = userService.linkDoctorAccount(userId, doctorId);
+        User linkedUser = userService.linkDoctorAccount(
+                userId,
+                doctorId);
 
         return ResponseEntity.ok(linkedUser);
     }
@@ -138,6 +165,58 @@ public class UserController {
 
         public void setUser(User user) {
             this.user = user;
+        }
+    }
+
+    // Request DTO for creating a login linked to an existing doctor.
+    public static class LinkedDoctorAccountRequest {
+
+        @NotBlank
+        private String username;
+
+        @NotBlank
+        @Email
+        private String email;
+
+        @NotBlank
+        private String password;
+
+        @NotNull
+        private Long doctorId;
+
+        public LinkedDoctorAccountRequest() {
+        }
+
+        public String getUsername() {
+            return username;
+        }
+
+        public void setUsername(String username) {
+            this.username = username;
+        }
+
+        public String getEmail() {
+            return email;
+        }
+
+        public void setEmail(String email) {
+            this.email = email;
+        }
+
+        public String getPassword() {
+            return password;
+        }
+
+        public void setPassword(String password) {
+            this.password = password;
+        }
+
+        public Long getDoctorId() {
+            return doctorId;
+        }
+
+        public void setDoctorId(Long doctorId) {
+            this.doctorId = doctorId;
         }
     }
 }

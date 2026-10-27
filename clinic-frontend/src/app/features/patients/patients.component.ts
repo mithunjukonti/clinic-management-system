@@ -4,6 +4,8 @@ import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
+import { AuthService } from '../../core/auth/auth.service';
+
 import {
   Patient,
   PatientsService
@@ -33,8 +35,17 @@ export class PatientsComponent implements OnInit {
   form: Patient = this.createEmptyPatient();
 
   constructor(
-    private readonly patientsService: PatientsService
+    private readonly patientsService: PatientsService,
+    private readonly authService: AuthService
   ) {}
+
+  get dashboardRoute(): string {
+    const role = this.authService.getRole();
+
+    return role === 'ADMIN'
+      ? '/admin-dashboard'
+      : '/staff-dashboard';
+  }
 
   ngOnInit(): void {
     this.loadPatients();

@@ -1,14 +1,15 @@
-
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import { AuthService } from '../../core/auth/auth.service';
+
 import {
   Appointment,
   AppointmentPerson,
   AppointmentRequest,
+  CompleteAppointmentRequest,
   AppointmentsService
 } from './appointments.service';
 
@@ -27,12 +28,19 @@ export class AppointmentsComponent implements OnInit {
   searchTerm = '';
   loading = false;
   saving = false;
+  completing = false;
+
   showForm = false;
+  showCompletionForm = false;
+
+  selectedAppointment: Appointment | null = null;
 
   successMessage = '';
   errorMessage = '';
 
   form = this.createEmptyForm();
+
+  consultationForm = this.createEmptyConsultationForm();
 
   constructor(
     private readonly appointmentsService: AppointmentsService,
@@ -64,7 +72,7 @@ export class AppointmentsComponent implements OnInit {
   }
 
   get canComplete(): boolean {
-    return this.userRole === 'DOCTOR';
+    return this.isDoctor;
   }
 
   get filteredAppointments(): Appointment[] {
@@ -100,6 +108,22 @@ export class AppointmentsComponent implements OnInit {
       doctorId: null,
       appointmentDateTime: '',
       reason: ''
+    };
+  }
+
+  private createEmptyConsultationForm(): {
+    symptoms: string;
+    diagnosis: string;
+    treatment: string;
+    prescription: string;
+    followUpDate: string;
+  } {
+    return {
+      symptoms: '',
+      diagnosis: '',
+      treatment: '',
+      prescription: '',
+      followUpDate: ''
     };
   }
 
@@ -144,8 +168,6 @@ export class AppointmentsComponent implements OnInit {
 
     this.appointmentsService.getAppointments().subscribe({
       next: appointments => {
-        // Newest scheduled appointment first.
-        // Copy the array before sorting to avoid mutating the response.
         this.appointments = [...appointments].sort(
           (a, b) =>
             new Date(b.appointmentDateTime).getTime() -
@@ -240,9 +262,7 @@ export class AppointmentsComponent implements OnInit {
       return;
     }
 
-    const selectedDate = new Date(
-      this.form.appointmentDateTime
-    );
+    const selectedDate = new Date(this.form.appointmentDateTime);
 
     if (
       Number.isNaN(selectedDate.getTime()) ||
@@ -269,8 +289,7 @@ export class AppointmentsComponent implements OnInit {
         this.saving = false;
         this.showForm = false;
         this.form = this.createEmptyForm();
-        this.successMessage =
-          'Appointment booked successfully.';
+        this.successMessage = 'Appointment booked successfully.';
         this.loadAppointments();
       },
       error: error => {
@@ -320,38 +339,123 @@ export class AppointmentsComponent implements OnInit {
       });
   }
 
+  // Open the consultation form instead of directly completing the visit.
   completeAppointment(appointment: Appointment): void {
     if (
       !this.canComplete ||
       appointment.id == null ||
+      appointment.patient?.id == null ||
       !this.isBooked(appointment)
     ) {
       return;
     }
 
-    if (
-      !window.confirm(
-        'Mark this appointment as completed?'
-      )
-    ) {
+    this.selectedAppointment = appointment;
+    this.consultationForm = this.createEmptyConsultationForm();
+
+    this.showCompletionForm = true;
+    this.showForm = false;
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    setTimeout(() => {
+      document.querySelector('.consultation-form-card')
+        ?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+    }, 0);
+  }
+
+  cancelCompletionForm(): void {
+    if (this.completing) {
       return;
     }
 
+    this.showCompletionForm = false;
+    this.selectedAppointment = null;
+    this.consultationForm = this.createEmptyConsultationForm();
+    this.errorMessage = '';
+  }
+
+  saveConsultation(): void {
+    const appointment = this.selectedAppointment;
+
+    if (
+      !this.canComplete ||
+      !appointment?.id ||
+      !appointment.patient?.id ||
+      !appointment.appointmentDateTime ||
+      this.completing
+    ) {
+      this.errorMessage =
+        'The selected appointment is missing required information.';
+      return;
+    }
+
+    const symptoms = this.consultationForm.symptoms.trim();
+    const diagnosis = this.consultationForm.diagnosis.trim();
+    const treatment = this.consultationForm.treatment.trim();
+    const prescription = this.consultationForm.prescription.trim();
+    const followUpDate = this.consultationForm.followUpDate;
+
+    if (!symptoms || !diagnosis || !treatment) {
+      this.errorMessage =
+        'Symptoms, diagnosis, and treatment are required.';
+      return;
+    }
+
+    const visitDate = appointment.appointmentDateTime.substring(0, 10);
+
+    if (followUpDate && followUpDate < visitDate) {
+      this.errorMessage =
+        'Follow-up date cannot be earlier than the visit date.';
+      return;
+    }
+
+    const request: CompleteAppointmentRequest = {
+      patient: {
+        id: appointment.patient.id
+      },
+      appointment: {
+        id: appointment.id
+      },
+      symptoms,
+      diagnosis,
+      treatment,
+      prescription,
+      visitDate,
+      ...(followUpDate ? { followUpDate } : {})
+    };
+
+    this.completing = true;
     this.errorMessage = '';
     this.successMessage = '';
 
     this.appointmentsService
-      .completeAppointment(appointment.id)
+      .completeAppointmentWithRecord(appointment.id, request)
       .subscribe({
         next: () => {
+          this.completing = false;
+          this.showCompletionForm = false;
+          this.selectedAppointment = null;
+          this.consultationForm = this.createEmptyConsultationForm();
+
           this.successMessage =
-            'Appointment marked as completed.';
+            'Medical record saved and appointment completed successfully.';
+
           this.loadAppointments();
         },
         error: error => {
+          console.error(
+            'Failed to save medical record and complete appointment:',
+            error
+          );
+
+          this.completing = false;
           this.errorMessage = this.getErrorMessage(
             error,
-            'Unable to complete the appointment.'
+            'Unable to save the medical record and complete the appointment.'
           );
         }
       });
@@ -361,10 +465,7 @@ export class AppointmentsComponent implements OnInit {
     return appointment.status?.toUpperCase() === 'BOOKED';
   }
 
-  private getErrorMessage(
-    error: any,
-    fallback: string
-  ): string {
+  private getErrorMessage(error: any, fallback: string): string {
     if (error.status === 0) {
       return 'Cannot connect to the backend. Check that Spring Boot is running and CORS is configured.';
     }
@@ -377,8 +478,15 @@ export class AppointmentsComponent implements OnInit {
       return 'Your account does not have permission to perform this action.';
     }
 
-    if (error.status === 400 && error.error?.message) {
-      return error.error.message;
+    if (error.status === 409) {
+      return error.error?.message ||
+        error.error ||
+        'This appointment cannot be completed in its current state.';
+    }
+
+    if (error.status === 400) {
+      return error.error?.message ||
+        'The submitted consultation details are invalid.';
     }
 
     return error.error?.message || fallback;

@@ -1,0 +1,383 @@
+
+<div class="user-management-page">
+
+  <!-- Shared Clinic Management Navigation -->
+  <nav class="top-navbar">
+    <a routerLink="/admin-dashboard" class="brand">
+      <span class="brand-icon" aria-hidden="true">+</span>
+      <span>Clinic Management</span>
+    </a>
+
+    <a routerLink="/admin-dashboard" class="dashboard-link">
+      Back to Dashboard
+    </a>
+  </nav>
+
+  <main class="page-content">
+
+    <!-- Page Heading -->
+    <header class="page-heading">
+      <div class="heading-copy">
+        <span class="eyebrow">CLINIC OPERATIONS</span>
+        <h1>User Management</h1>
+        <p>Create and manage clinic login accounts.</p>
+      </div>
+
+      <button
+        type="button"
+        class="btn btn-secondary logout-button"
+        (click)="logout()">
+        Logout
+      </button>
+    </header>
+
+    <!-- Messages -->
+    <div *ngIf="error" class="alert alert-error" role="alert">
+      {{ error }}
+    </div>
+
+    <div *ngIf="success" class="alert alert-success" role="status">
+      {{ success }}
+    </div>
+
+    <!-- Clinic Accounts Actions -->
+    <section class="management-actions">
+      <div class="management-copy">
+        <h2>Clinic Accounts</h2>
+        <p>Manage administrator, staff and doctor accounts.</p>
+      </div>
+
+      <div class="action-buttons">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="openCreateForm('STAFF')">
+          + Create Staff Account
+        </button>
+
+        <button
+          type="button"
+          class="btn btn-primary"
+          (click)="openCreateForm('DOCTOR')">
+          + Create Doctor Account
+        </button>
+      </div>
+    </section>
+
+    <!-- Create Account Form -->
+    <section *ngIf="showForm" class="form-card">
+
+      <div class="form-header">
+        <div>
+          <h2>Create Login Account</h2>
+          <p>
+            Create a staff account or link a doctor login to an existing profile.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          class="btn btn-secondary"
+          [disabled]="saving"
+          (click)="closeCreateForm()">
+          Cancel
+        </button>
+      </div>
+
+      <form (ngSubmit)="createUser()" #userForm="ngForm">
+
+        <!-- Account Type -->
+        <div class="form-group">
+          <label for="accountType">Account Type</label>
+
+          <select
+            id="accountType"
+            name="accountType"
+            [(ngModel)]="accountType"
+            (ngModelChange)="onAccountTypeChange()"
+            required>
+            <option value="STAFF">Staff Login Account</option>
+            <option value="DOCTOR">Doctor Login Account</option>
+          </select>
+        </div>
+
+        <!-- Doctor Profile -->
+        <div *ngIf="accountType === 'DOCTOR'" class="form-group">
+          <label for="doctorId">Select Existing Doctor Profile</label>
+
+          <p *ngIf="loadingDoctors" class="helper-text">
+            Loading doctor profiles...
+          </p>
+
+          <select
+            *ngIf="!loadingDoctors"
+            id="doctorId"
+            name="doctorId"
+            [(ngModel)]="selectedDoctorId"
+            (ngModelChange)="onDoctorChange()"
+            required>
+            <option [ngValue]="null" disabled>
+              -- Select a doctor --
+            </option>
+
+            <option
+              *ngFor="let doctor of availableDoctors"
+              [ngValue]="doctor.id">
+              {{ doctor.name }} — {{ doctor.email }}
+            </option>
+          </select>
+
+          <p
+            *ngIf="!loadingDoctors && availableDoctors.length === 0"
+            class="helper-text">
+            No unlinked doctor profiles are available.
+          </p>
+
+          <p class="helper-text">
+            Only doctor profiles without an existing linked login are listed.
+          </p>
+        </div>
+
+        <!-- Username -->
+        <div class="form-group">
+          <label for="username">Username</label>
+
+          <input
+            id="username"
+            name="username"
+            type="text"
+            [(ngModel)]="form.username"
+            minlength="4"
+            maxlength="50"
+            autocomplete="username"
+            placeholder="Enter username"
+            required />
+        </div>
+
+        <!-- Email -->
+        <div class="form-group">
+          <label for="email">Email Address</label>
+
+          <input
+            id="email"
+            name="email"
+            type="email"
+            [(ngModel)]="form.email"
+            [readonly]="accountType === 'DOCTOR'"
+            autocomplete="email"
+            placeholder="Enter email address"
+            required />
+
+          <p *ngIf="accountType === 'DOCTOR'" class="helper-text">
+            Automatically populated from the selected doctor profile.
+          </p>
+        </div>
+
+        <!-- Password -->
+        <div class="form-group">
+          <label for="password">Password</label>
+
+          <input
+            id="password"
+            name="password"
+            type="password"
+            [(ngModel)]="form.password"
+            minlength="8"
+            autocomplete="new-password"
+            placeholder="Minimum 8 characters"
+            required />
+        </div>
+
+        <!-- Form Actions -->
+        <div class="form-actions">
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="saving || (accountType === 'DOCTOR' && (!selectedDoctorId || loadingDoctors))">
+            {{ saving ? 'Creating Account...' : 'Create Account' }}
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-secondary"
+            [disabled]="saving"
+            (click)="closeCreateForm()">
+            Cancel
+          </button>
+        </div>
+
+      </form>
+    </section>
+
+    <!-- Role Tabs -->
+    <section class="role-tabs" aria-label="Filter accounts by role">
+
+      <button
+        type="button"
+        class="role-tab"
+        [class.active]="selectedRole === 'ADMIN'"
+        [attr.aria-pressed]="selectedRole === 'ADMIN'"
+        (click)="selectRole('ADMIN')">
+        <span class="tab-title">Admin Accounts</span>
+        <span class="tab-count">{{ adminCount }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="role-tab"
+        [class.active]="selectedRole === 'STAFF'"
+        [attr.aria-pressed]="selectedRole === 'STAFF'"
+        (click)="selectRole('STAFF')">
+        <span class="tab-title">Staff Accounts</span>
+        <span class="tab-count">{{ staffCount }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="role-tab"
+        [class.active]="selectedRole === 'DOCTOR'"
+        [attr.aria-pressed]="selectedRole === 'DOCTOR'"
+        (click)="selectRole('DOCTOR')">
+        <span class="tab-title">Doctor Accounts</span>
+        <span class="tab-count">{{ doctorCount }}</span>
+      </button>
+
+    </section>
+
+    <!-- Search -->
+    <section class="search-card">
+
+      <label for="accountSearch">
+        Search {{ selectedRoleTitle }}
+      </label>
+
+      <div class="search-input-wrapper">
+        <span class="search-icon" aria-hidden="true">⌕</span>
+
+        <input
+          id="accountSearch"
+          name="accountSearch"
+          type="search"
+          [(ngModel)]="searchTerm"
+          placeholder="Search by name, username, email or ID..." />
+
+        <button
+          *ngIf="searchTerm"
+          type="button"
+          class="clear-search"
+          (click)="searchTerm = ''">
+          Clear
+        </button>
+      </div>
+
+      <p class="search-hint">
+        {{ filteredUsers.length }} matching account(s)
+      </p>
+
+    </section>
+
+    <!-- Account Directory -->
+    <section class="users-card">
+
+      <div class="table-header">
+        <div>
+          <h2>{{ selectedRoleTitle }}</h2>
+          <p>{{ filteredUsers.length }} account(s)</p>
+        </div>
+
+        <button
+          type="button"
+          class="btn btn-secondary"
+          [disabled]="loading"
+          (click)="loadUsers(); loadDoctors()">
+          {{ loading ? 'Refreshing...' : 'Refresh' }}
+        </button>
+      </div>
+
+      <!-- Loading -->
+      <div *ngIf="loading" class="loading-state">
+        <span class="loading-spinner" aria-hidden="true"></span>
+        Loading user accounts...
+      </div>
+
+      <!-- Empty Role -->
+      <div
+        *ngIf="!loading && filteredUsers.length === 0 && !searchTerm"
+        class="empty-state">
+        <span class="empty-icon" aria-hidden="true">◎</span>
+        <strong>No {{ selectedRole.toLowerCase() }} accounts found</strong>
+        <p>Accounts for this role will appear here.</p>
+      </div>
+
+      <!-- No Search Results -->
+      <div
+        *ngIf="!loading && filteredUsers.length === 0 && searchTerm"
+        class="empty-state">
+        <strong>No matching accounts</strong>
+        <p>
+          No accounts match "{{ searchTerm }}".
+          Try another name, username or email.
+        </p>
+      </div>
+
+      <!-- Accounts Table -->
+      <div
+        *ngIf="!loading && filteredUsers.length > 0"
+        class="table-wrapper">
+
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Username</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            
+<tbody>
+  <tr *ngFor="let user of filteredUsers">
+    <td class="id-cell">{{ user.id }}</td>
+
+    <td>
+      <strong class="user-name">
+        {{ getDisplayName(user) }}
+      </strong>
+    </td>
+
+    <td>{{ user.username }}</td>
+
+    <td class="email-cell">{{ user.email }}</td>
+
+    <td>
+      <span
+        class="role-badge"
+        [ngClass]="'role-' + user.role.toLowerCase()"
+      >
+        {{ user.role }}
+      </span>
+    </td>
+
+    <td>
+      <button
+        type="button"
+        class="delete-button"
+        (click)="deleteUser(user)"
+        [disabled]="deletingUserId === user.id"
+      >
+        {{ deletingUserId === user.id ? 'Deleting...' : 'Delete' }}
+      </button>
+    </td>
+  </tr>
+
+  <tr *ngIf="!loading && filteredUsers.length === 0">
+    <td colspan="6" class="empty-state">
+      No users found.
+    </td>
+  </tr>
+</tbody>
+

@@ -1,4 +1,3 @@
-
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -27,12 +26,8 @@ export interface MedicalRecord {
 }
 
 export interface MedicalRecordRequest {
-  patient: {
-    id: number;
-  };
-  appointment: {
-    id: number;
-  };
+  patient: { id: number };
+  appointment: { id: number };
   symptoms: string;
   diagnosis: string;
   treatment: string;
@@ -45,7 +40,8 @@ export interface MedicalRecordRequest {
   providedIn: 'root'
 })
 export class MedicalRecordsService {
-  private readonly apiUrl = 'http://localhost:8080/api/medical-records';
+  private readonly apiUrl =
+    'http://localhost:8080/api/medical-records';
 
   constructor(private readonly http: HttpClient) {}
 
@@ -56,12 +52,27 @@ export class MedicalRecordsService {
   }
 
   getRecordById(id: number): Observable<MedicalRecord> {
-    return this.http.get<MedicalRecord>(`${this.apiUrl}/${id}`);
+    return this.http.get<MedicalRecord>(
+      `${this.apiUrl}/${id}`
+    );
   }
 
   createMedicalRecord(
     request: MedicalRecordRequest
   ): Observable<MedicalRecord> {
-    return this.http.post<MedicalRecord>(this.apiUrl, request);
+    return this.http.post<MedicalRecord>(
+      this.apiUrl,
+      request
+    );
+  }
+
+  updateMedicalRecord(
+    id: number,
+    request: MedicalRecordRequest
+  ): Observable<MedicalRecord> {
+    return this.http.put<MedicalRecord>(
+      `${this.apiUrl}/${id}`,
+      request
+    );
   }
 }

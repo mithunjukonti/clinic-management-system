@@ -1,4 +1,3 @@
-
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -35,6 +34,7 @@ export class MedicalRecordsComponent implements OnInit {
 
   selectedPatientId: number | null = null;
   selectedAppointmentId: number | null = null;
+  editingRecord: MedicalRecord | null = null;
 
   searchTerm = '';
 
@@ -96,10 +96,47 @@ export class MedicalRecordsComponent implements OnInit {
     );
   }
 
+  get recordedAppointmentIds(): Set<number> {
+    return new Set(
+      this.records
+        .map(record => record.appointment?.id)
+        .filter((id): id is number => id != null)
+    );
+  }
+
+  // FIX: Ignore appointments without a valid ID.
+  get availableAppointments(): Appointment[] {
+    return this.completedAppointmentsForPatient.filter(
+      appointment =>
+        appointment.id != null &&
+        !this.recordedAppointmentIds.has(appointment.id)
+    );
+  }
+
   get selectedAppointment(): Appointment | undefined {
     return this.completedAppointmentsForPatient.find(
       appointment => appointment.id === this.selectedAppointmentId
     );
+  }
+
+  get totalRecords(): number {
+    return this.records.length;
+  }
+
+  get completedVisitCount(): number {
+    return this.completedAppointmentsForPatient.length;
+  }
+
+  get pendingRecordCount(): number {
+    return this.availableAppointments.length;
+  }
+
+  get followUpCount(): number {
+    const today = this.todayString();
+
+    return this.records.filter(record =>
+      !!record.followUpDate && record.followUpDate >= today
+    ).length;
   }
 
   loadAppointments(): void {
@@ -115,7 +152,7 @@ export class MedicalRecordsComponent implements OnInit {
         appointments
           .filter(appointment =>
             appointment.status?.toUpperCase() === 'COMPLETED' &&
-            appointment.patient !== null
+            appointment.patient != null
           )
           .forEach(appointment => {
             const patient = appointment.patient!;
@@ -143,14 +180,22 @@ export class MedicalRecordsComponent implements OnInit {
           this.selectedAppointmentId = null;
           this.records = [];
           this.showCreateForm = false;
+          this.editingRecord = null;
         }
 
         this.loadingAppointments = false;
+
+        if (this.selectedPatientId !== null) {
+          this.loadRecords();
+        }
       },
+
       error: error => {
         console.error('Failed to load appointments:', error);
+
         this.appointmentsError =
-          'Unable to load your completed appointments. Check your login and try again.';
+          'Unable to load completed appointments. Please try again.';
+
         this.loadingAppointments = false;
       }
     });
@@ -164,6 +209,8 @@ export class MedicalRecordsComponent implements OnInit {
     this.formError = '';
     this.successMessage = '';
     this.showCreateForm = false;
+    this.editingRecord = null;
+
     this.resetForm();
     this.loadRecords();
   }
@@ -184,35 +231,69 @@ export class MedicalRecordsComponent implements OnInit {
       .getRecordsByPatient(this.selectedPatientId)
       .subscribe({
         next: records => {
-          this.records = records.sort(
+          this.records = [...records].sort(
             (a, b) => b.visitDate.localeCompare(a.visitDate)
           );
+
           this.loadingRecords = false;
         },
+
         error: error => {
           console.error('Failed to load medical records:', error);
+
           this.recordsError =
-            'Unable to load medical records. Check your login and try again.';
+            'Unable to load medical records. Please check your access and retry.';
+
           this.loadingRecords = false;
         }
       });
   }
 
   openCreateForm(): void {
-    if (this.selectedPatientId === null) {
+    if (
+      this.selectedPatientId === null ||
+      this.availableAppointments.length === 0
+    ) {
       return;
     }
 
     this.showCreateForm = true;
+    this.editingRecord = null;
     this.formError = '';
     this.successMessage = '';
     this.selectedAppointmentId = null;
+
     this.resetForm();
+  }
+
+  editMedicalRecord(record: MedicalRecord): void {
+    this.editingRecord = record;
+    this.showCreateForm = true;
+    this.formError = '';
+    this.successMessage = '';
+    this.selectedAppointmentId = record.appointment.id;
+
+    this.form = {
+      symptoms: record.symptoms || '',
+      diagnosis: record.diagnosis || '',
+      treatment: record.treatment || '',
+      prescription: record.prescription || '',
+      followUpDate: record.followUpDate || ''
+    };
+
+    document.querySelector('.record-form-card')
+      ?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
   }
 
   cancelCreateForm(): void {
     this.showCreateForm = false;
     this.formError = '';
+    this.editingRecord = null;
+    this.selectedAppointmentId = null;
+
     this.resetForm();
   }
 
@@ -222,10 +303,15 @@ export class MedicalRecordsComponent implements OnInit {
       return;
     }
 
-    const appointment = this.selectedAppointment;
+    const appointment = this.editingRecord
+      ? this.completedAppointmentsForPatient.find(
+          item => item.id === this.editingRecord!.appointment.id
+        )
+      : this.selectedAppointment;
 
     if (!appointment?.id || !appointment.appointmentDateTime) {
-      this.formError = 'Please select a completed appointment.';
+      this.formError =
+        'Please select a valid completed appointment.';
       return;
     }
 
@@ -236,20 +322,18 @@ export class MedicalRecordsComponent implements OnInit {
 
     if (!symptoms || !diagnosis || !treatment) {
       this.formError =
-        'Please enter symptoms, diagnosis, and treatment.';
+        'Symptoms, diagnosis, and treatment are required.';
       return;
     }
 
     if (this.form.followUpDate) {
-      const today = new Date();
-      const todayDate = [
-        today.getFullYear(),
-        String(today.getMonth() + 1).padStart(2, '0'),
-        String(today.getDate()).padStart(2, '0')
-      ].join('-');
+      const visitDate = this.editingRecord
+        ? this.editingRecord.visitDate
+        : appointment.appointmentDateTime.substring(0, 10);
 
-      if (this.form.followUpDate < todayDate) {
-        this.formError = 'Follow-up date cannot be in the past.';
+      if (this.form.followUpDate < visitDate) {
+        this.formError =
+          'Follow-up date cannot be earlier than the visit date.';
         return;
       }
     }
@@ -258,16 +342,20 @@ export class MedicalRecordsComponent implements OnInit {
       patient: {
         id: this.selectedPatientId
       },
+
       appointment: {
         id: appointment.id
       },
+
       symptoms,
       diagnosis,
       treatment,
       prescription,
-      // The backend derives visitDate from the appointment.
-      // Include it here because the current backend validates the entity first.
-      visitDate: appointment.appointmentDateTime.substring(0, 10),
+
+      visitDate: this.editingRecord
+        ? this.editingRecord.visitDate
+        : appointment.appointmentDateTime.substring(0, 10),
+
       ...(this.form.followUpDate
         ? { followUpDate: this.form.followUpDate }
         : {})
@@ -277,27 +365,61 @@ export class MedicalRecordsComponent implements OnInit {
     this.formError = '';
     this.successMessage = '';
 
-    this.medicalRecordsService.createMedicalRecord(request).subscribe({
+    const operation = this.editingRecord
+      ? this.medicalRecordsService.updateMedicalRecord(
+          this.editingRecord.id,
+          request
+        )
+      : this.medicalRecordsService.createMedicalRecord(request);
+
+    operation.subscribe({
       next: () => {
+        const wasEditing = this.editingRecord !== null;
+
         this.savingRecord = false;
         this.showCreateForm = false;
-        this.successMessage = 'Medical record created successfully.';
+        this.editingRecord = null;
+        this.selectedAppointmentId = null;
+
         this.resetForm();
+
+        this.successMessage = wasEditing
+          ? 'Medical record updated successfully.'
+          : 'Medical record created successfully.';
+
         this.loadRecords();
       },
+
       error: error => {
-        console.error('Failed to create medical record:', error);
+        console.error('Failed to save medical record:', error);
 
         const backendMessage =
           error?.error?.message || error?.error?.error;
 
         this.formError = backendMessage
-          ? `Unable to save the medical record: ${backendMessage}`
-          : 'Unable to save the medical record. Verify the appointment and your access, then try again.';
+          ? `Unable to save the record: ${backendMessage}`
+          : 'Unable to save the medical record. Please verify the details and try again.';
 
         this.savingRecord = false;
       }
     });
+  }
+
+  trackRecordById(
+    index: number,
+    record: MedicalRecord
+  ): number {
+    return record.id;
+  }
+
+  private todayString(): string {
+    const today = new Date();
+
+    return [
+      today.getFullYear(),
+      String(today.getMonth() + 1).padStart(2, '0'),
+      String(today.getDate()).padStart(2, '0')
+    ].join('-');
   }
 
   private resetForm(): void {

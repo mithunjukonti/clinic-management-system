@@ -5,6 +5,7 @@
       <span class="brand-mark">+</span>
       <span>Clinic Management</span>
     </a>
+
     <div class="account">
       <span>{{ username }}</span>
       <button type="button" (click)="logout()">Log out</button>
@@ -19,26 +20,33 @@
     </p>
 
     <section class="module-grid">
-      <article class="module-card">
+      <a class="module-card" routerLink="/patients">
         <span class="module-icon">P</span>
         <h2>Patients</h2>
         <p>Register and manage patient information.</p>
-      </article>
-      <article class="module-card">
+        <span class="module-link">Open Patients →</span>
+      </a>
+
+      <a class="module-card" routerLink="/doctors">
         <span class="module-icon">D</span>
         <h2>Doctors</h2>
         <p>Manage doctor profiles and availability.</p>
-      </article>
-      <article class="module-card">
+        <span class="module-link">Open Doctors →</span>
+      </a>
+
+      <a class="module-card" routerLink="/appointments">
         <span class="module-icon">A</span>
         <h2>Appointments</h2>
         <p>Oversee clinic appointment workflows.</p>
-      </article>
-      <article class="module-card">
+        <span class="module-link">Open Appointments →</span>
+      </a>
+
+      <a class="module-card" routerLink="/user-management">
         <span class="module-icon">U</span>
         <h2>User Management</h2>
         <p>Manage authorized clinic accounts.</p>
-      </article>
+        <span class="module-link">Manage Users →</span>
+      </a>
     </section>
   </main>
 </div>

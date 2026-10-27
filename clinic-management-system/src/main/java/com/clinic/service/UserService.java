@@ -32,6 +32,7 @@ public class UserService {
     }
 
     // Public registration: users can only register as STAFF.
+    @Transactional
     public User registerUser(User user) {
 
         validateUniqueCredentials(user);
@@ -44,6 +45,7 @@ public class UserService {
     }
 
     // ADMIN: Create a doctor login account without linking a profile.
+    @Transactional
     public User createDoctor(User user) {
 
         validateUniqueCredentials(user);
@@ -62,7 +64,8 @@ public class UserService {
         validateUniqueCredentials(user);
 
         if (doctor.getEmail() == null || doctor.getEmail().isBlank()) {
-            throw new IllegalArgumentException("Doctor email is required");
+            throw new IllegalArgumentException(
+                    "Doctor email is required");
         }
 
         if (user.getEmail() == null
@@ -80,19 +83,53 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    // ADMIN: Create a doctor login account linked to an existing profile.
+    @Transactional
+    public User createLinkedDoctorAccount(User user, Long doctorId) {
+
+        validateUniqueCredentials(user);
+
+        Doctor doctor = doctorRepository.findById(doctorId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Doctor not found: " + doctorId));
+
+        if (userRepository.existsByDoctorId(doctorId)) {
+            throw new IllegalArgumentException(
+                    "This doctor already has a linked user account");
+        }
+
+        // Ensure the login email belongs to the selected doctor profile.
+        if (doctor.getEmail() == null
+                || user.getEmail() == null
+                || !doctor.getEmail().equalsIgnoreCase(user.getEmail())) {
+            throw new IllegalArgumentException(
+                    "The account email must match the selected doctor's email");
+        }
+
+        user.setRole(UserRole.DOCTOR);
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        user.setDoctor(doctor);
+
+        return userRepository.save(user);
+    }
+
+    // Validate username and email uniqueness.
     private void validateUniqueCredentials(User user) {
 
         if (userRepository.existsByUsername(user.getUsername())) {
-            throw new IllegalArgumentException("Username already exists");
+            throw new IllegalArgumentException(
+                    "Username already exists");
         }
 
         if (userRepository.existsByEmail(user.getEmail())) {
-            throw new IllegalArgumentException("Email already exists");
+            throw new IllegalArgumentException(
+                    "Email already exists");
         }
     }
 
-    // Find a user by username, including the authenticated user's account.
+    // Find a user by username.
     public User getUserByUsername(String username) {
+
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "User not found: " + username));
@@ -105,18 +142,21 @@ public class UserService {
 
     // Find a user by ID.
     public User getUserById(Long id) {
+
         return userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "User not found with ID: " + id));
     }
 
-    // Delete a user by ID.
+    // ADMIN: Delete a user by ID.
+    @Transactional
     public void deleteUser(Long id) {
+
         User user = getUserById(id);
         userRepository.delete(user);
     }
 
-    // Link an existing doctor account to an existing doctor profile.
+    // ADMIN: Link an existing doctor account to an existing profile.
     @Transactional
     public User linkDoctorAccount(Long userId, Long doctorId) {
 
@@ -141,6 +181,14 @@ public class UserService {
         if (userRepository.existsByDoctorId(doctorId)) {
             throw new IllegalArgumentException(
                     "This doctor record is already linked to a user account");
+        }
+
+        // The account email must match the doctor profile.
+        if (user.getEmail() == null
+                || doctor.getEmail() == null
+                || !user.getEmail().equalsIgnoreCase(doctor.getEmail())) {
+            throw new IllegalArgumentException(
+                    "The user email must match the doctor's email");
         }
 
         user.setDoctor(doctor);
